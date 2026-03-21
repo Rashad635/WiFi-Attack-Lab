@@ -1,4 +1,4 @@
-**WPA/WPA2 Handshake Capture and Crack with Aircrack-ng**
+## WPA/WPA2 Handshake Capture and Crack with Aircrack-ng
 - **Date: March 20, 2026**
 
 **Objective**
@@ -22,9 +22,9 @@ All activity was carried out on a personal router using owned devices in a contr
 
 **Process**
 
-**1.** I began by preparing the wireless adapter for monitor mode. Interfering processes were stopped, then monitor mode was enabled and verified.
+**Step 1:** I began by preparing the wireless adapter for monitor mode. Interfering processes were stopped, then monitor mode was enabled and verified.
 
-**Syntax:**
+**Command used::**
    - sudo airmon-ng check kill
    - sudo airmon-ng start wlan0
    - iwconfig
@@ -33,9 +33,9 @@ All activity was carried out on a personal router using owned devices in a contr
 
 #
 
-**2.** I scanned for nearby networks and identified the target access point from my lab setup.
+**Step 2:I scanned for nearby networks and identified the target access point from my lab setup.**
 
-**Syntax**
+**Command used:**
    - sudo airodump-ng wlan0
 
 **The target network details were as follows:**
@@ -47,26 +47,27 @@ All activity was carried out on a personal router using owned devices in a contr
 
 #
 
-**3.** I then focused the capture on this specific network to collect the necessary packets.
+**Step 3:** I then focused the capture on this specific network to collect the necessary packets.
 
-**Syntax**
+Command used:
    - sudo iwconfig wlan0 channel 2
    - sudo airodump-ng --bssid 60:83:E7:47:CA:4D -c 2 --write 4Wayhandshake wlan0
 <img width="1157" height="625" alt="Capture target wifi traffic" src="https://github.com/user-attachments/assets/2d9fc1b3-653f-4e4b-b895-7426ba58ef45" />
 
 #
 
-**4.** A client reconnection was triggered to generate traffic, and the handshake was successfully captured.
+**Step 4:** A client reconnection was triggered to generate traffic, and the handshake was successfully captured.
 
-**Syntax**
+Command used:
+
 - sudo mdk4 wlan0 d -c 2
 <img width="1160" height="623" alt="Capture target wifi traffic2" src="https://github.com/user-attachments/assets/f5ef8733-2246-4bdd-aa2a-dc47ce0c42a4" />
 
 #
 
-**5.** To confirm the capture, I opened the file in Wireshark.
+**Step 5:** To confirm the capture, I opened the file in Wireshark.
 
-**Syntax**
+**Command used:**
 - Wireshark 4Wayhandshake-01.cap
 - Using the filter: eapol
 <img width="1473" height="705" alt="Verify capture 4wayhandshake using wireshark" src="https://github.com/user-attachments/assets/a7e189d4-118f-4f13-b0ff-bea87d229b5f" />
@@ -77,7 +78,7 @@ I observed all four EAPOL key messages exchanged between the client and the acce
 
 **6.** With a valid handshake available, I moved on to the cracking phase using a dictionary attack.
    
-   **Syntax**
+**Command used:**
    - sudo aircrack-ng 4Wayhandshake-01.cap -w /usr/share/wordlists/rockyou.txt
 <img width="1152" height="625" alt="WiFi password key found" src="https://github.com/user-attachments/assets/dad7ce1d-79f3-49d6-82f1-4388a7e73b26" />
 
@@ -103,10 +104,3 @@ The output also included the derived master key, transient key, and EAPOL HMAC v
 - Monitor wireless traffic for unusual authentication patterns
 - Use 802.1X authentication in business environments instead of shared keys
 
-**Screenshots included**
-
-- Monitor mode setup
-- Targeted packet capture with handshake confirmation
-- Wireshark view showing EAPOL messages
-- Network scan displaying access point and connected clients
-- Aircrack-ng output showing successful key recovery
